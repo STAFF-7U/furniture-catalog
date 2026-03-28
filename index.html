@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>傢俱報價庫存</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F1;--surface:#FFF;--surface2:#EFECE6;--border:#E4DFD5;--border2:#C8C0B0;
+  --text:#1E1A12;--text2:#7A7060;--text3:#B0A898;
+  --accent:#6B4C1E;--accent2:#9A7040;--accent-bg:#F4ECE0;
+  --green:#276744;--green-bg:#E6F4EC;--green-light:#D1EDDA;
+  --red:#A83228;--red-bg:#FAEAE8;--red-light:#F5D0CC;
+  --amber:#8A5F00;--amber-bg:#FEF4D6;--amber-light:#FDEDB8;
+  --r:12px;--r-sm:8px;
+  --shadow:0 2px 12px rgba(30,26,18,.08);--shadow-lg:0 8px 32px rgba(30,26,18,.14);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --header:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+button{-webkit-appearance:none;appearance:none;touch-action:manipulation;cursor:pointer}
+input,select,textarea{-webkit-appearance:none;appearance:none}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;font-size:15px;-webkit-font-smoothing:antialiased;padding-bottom:calc(84px + var(--safe-bottom));overscroll-behavior:none}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px}
+.login-card{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:36px 28px;max-width:360px;width:100%;text-align:center;box-shadow:var(--shadow-lg)}
+.login-logo{font-family:'DM Serif Display',serif;font-size:2rem;margin-bottom:6px}
+.login-sub{font-size:.85rem;color:var(--text2);margin-bottom:28px;line-height:1.6}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 20px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:.9rem;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;min-height:48px}
+.btn-google:hover{background:var(--surface2);border-color:var(--border2)}
+.btn-google img{width:20px;height:20px}
+.login-note{font-size:.72rem;color:var(--text3);margin-top:12px}
+
+/* ── SYNC STATUS ── */
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#aaa;flex-shrink:0;transition:background .3s}
+.sync-dot.synced{background:#27ae60}
+.sync-dot.syncing{background:#f39c12;animation:pulse .8s infinite}
+.sync-dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sync-label{font-size:.68rem;color:rgba(255,255,255,.7)}
+
+/* ── HEADER ── */
+header{background:var(--accent);color:#fff;height:var(--header);padding:0 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:0 2px 16px rgba(107,76,30,.4)}
+.logo{font-family:'DM Serif Display',serif;font-size:1.1rem;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.logo-tag{font-family:'Noto Sans TC',sans-serif;font-size:.6rem;font-weight:400;opacity:.6;letter-spacing:.04em;display:none}
+@media(min-width:480px){.logo-tag{display:inline}}
+.hdr-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.hdr-right{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.sync-area{display:flex;align-items:center;gap:4px}
+.sync-label{display:none}
+@media(min-width:480px){.sync-label{display:inline}}
+.user-avatar{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.4);object-fit:cover;cursor:pointer}
+.user-initial{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;cursor:pointer}
+
+/* ── BTN ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:none;font-family:inherit;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;border-radius:var(--r-sm)}
+.btn-white{background:#fff;color:var(--accent);padding:5px 10px;font-size:.74rem;min-height:32px}
+.btn-white:hover{background:var(--accent-bg)}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1.5px solid var(--border);padding:8px 13px;font-size:.82rem;min-height:44px}
+.btn-ghost:hover{border-color:var(--border2)}
+.btn-primary{background:var(--accent);color:#fff;padding:10px 16px;font-size:.88rem;min-height:48px}
+.btn-primary:hover{background:var(--accent2)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:none;padding:8px 12px;font-size:.82rem;min-height:44px}
+.btn-danger:hover{background:var(--red-light)}
+.btn-sm{min-height:36px;padding:6px 12px;font-size:.78rem}
+
+/* ── TOOLBAR ── */
+.toolbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:var(--header);z-index:200}
+.toolbar-top{padding:10px 14px;display:flex;gap:8px;align-items:center}
+.search-wrap{position:relative;flex:1}
+.search-wrap input{width:100%;padding:10px 12px 10px 36px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);transition:border .15s;min-height:44px}
+.search-wrap input:focus{outline:none;border-color:var(--accent2)}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;font-size:.9rem}
+.icon-btn{min-width:44px;min-height:44px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.95rem;flex-shrink:0}
+.icon-btn.active{background:var(--accent-bg);border-color:var(--accent2);color:var(--accent)}
+.filter-panel{overflow:hidden;max-height:0;transition:max-height .25s ease}
+.filter-panel.open{max-height:280px}
+.filter-inner{padding:0 14px 12px;display:flex;gap:8px;flex-wrap:wrap}
+select{padding:10px 8px;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-size:16px;font-family:inherit;cursor:pointer;min-height:44px;flex:1;min-width:110px}
+select:focus{outline:none;border-color:var(--accent2)}
+.stock-filter-btns{display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-bottom:2px}
+.sfilter-btn{padding:7px 13px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:.76rem;font-family:inherit;cursor:pointer;transition:all .15s;font-weight:500;min-height:36px;touch-action:manipulation}
+.sfilter-btn.active-out{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.sfilter-btn.active-low{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.sfilter-btn.active-ok{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.view-row{padding:0 14px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.view-btns{display:flex;border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
+.view-btns button{padding:8px 12px;min-height:36px;border:none;background:var(--bg);color:var(--text2);cursor:pointer;font-size:.82rem;transition:all .15s}
+.view-btns button.active{background:var(--accent);color:#fff}
+.sort-sel{flex:1;min-width:120px;max-width:210px;min-height:36px;padding:6px 8px;font-size:.82rem}
+
+/* ── STATS ── */
+.stats{background:var(--surface);border-bottom:1px solid var(--border);padding:7px 14px;display:flex;gap:10px;flex-wrap:nowrap;font-size:.72rem;color:var(--text2);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.stats::-webkit-scrollbar{display:none}
+.sstat{display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.sstat b{font-weight:700}
+.sstat.danger b{color:var(--red)}
+.sstat.warn b{color:var(--amber)}
+.sstat.ok b{color:var(--green)}
+.sstat.neutral b{color:var(--accent)}
+.sdiv{color:var(--border2);flex-shrink:0}
+
+/* ── MAIN ── */
+main{padding:14px}
+
+/* ── GRID ── */
+.grid{display:grid;gap:13px;grid-template-columns:1fr}
+@media(min-width:481px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:769px){.grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:15px}}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);overflow:visible;box-shadow:var(--shadow);display:flex;flex-direction:column;transition:box-shadow .15s}
+.card.out-stock{border-color:var(--red);box-shadow:0 0 0 1px var(--red-light),var(--shadow)}
+.card.low-stock{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-light),var(--shadow)}
+@media(hover:hover){.card:hover{box-shadow:var(--shadow-lg)}}
+.card-img{width:100%;aspect-ratio:1/1;position:relative;background:var(--surface2);overflow:hidden;border-radius:calc(var(--r) - 1px) calc(var(--r) - 1px) 0 0}
+.card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--surface2)}
+.no-img{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.2rem;color:var(--border2)}
+.vtag{position:absolute;top:8px;left:8px;font-size:.65rem;padding:3px 9px;border-radius:20px;color:#fff;font-weight:700}
+.stock-badge{position:absolute;top:8px;right:8px;font-size:.65rem;padding:3px 9px;border-radius:20px;font-weight:700}
+.sb-ok{background:var(--green-bg);color:var(--green)}
+.sb-low{background:var(--amber-bg);color:var(--amber)}
+.sb-out{background:var(--red-bg);color:var(--red)}
+.card-body{padding:11px 12px 12px;flex:1;display:flex;flex-direction:column;gap:5px}
+.card-name{font-weight:700;font-size:.93rem;line-height:1.35}
+.card-sub{font-size:.72rem;color:var(--text2);line-height:1.5}
+.price-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.chip{font-size:.72rem;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap}
+.chip-c{background:var(--amber-bg);color:var(--amber)}
+.chip-s{background:var(--green-bg);color:var(--green)}
+.chip-m{background:var(--surface2);color:var(--text2)}
+.chip-m.g{background:var(--green-bg);color:var(--green)}
+.chip-m.a{background:var(--amber-bg);color:var(--amber)}
+.chip-m.r{background:var(--red-bg);color:var(--red)}
+
+/* ── STOCK CONTROL ── */
+.stock-ctrl{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-top:4px;width:100%}
+.stock-ctrl.out{border-color:var(--red)}
+.stock-ctrl.low{border-color:var(--amber)}
+.stock-ctrl.ok{border-color:var(--green)}
+.sq-btn{width:44px;height:44px;border:none;background:var(--surface2);color:var(--text);font-size:1.2rem;cursor:pointer;transition:background .12s;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;touch-action:manipulation;user-select:none}
+.sq-btn:active,.sq-btn:focus{background:var(--border);outline:none}
+.sq-btn:disabled{color:var(--text3);opacity:.5}
+.sq-num{flex:1;min-width:0;height:44px;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);background:var(--surface);font-size:1rem;font-family:inherit;font-weight:700;text-align:center;color:var(--text);padding:0}
+.sq-num:focus{outline:none;background:var(--accent-bg)}
+.sq-num::-webkit-inner-spin-button,.sq-num::-webkit-outer-spin-button{-webkit-appearance:none}
+.sq-label{font-size:.72rem;color:var(--text2);padding:0 10px;height:44px;display:flex;align-items:center;border-left:1px solid var(--border);white-space:nowrap;flex-shrink:0}
+.card-note{font-size:.72rem;color:var(--text2);display:flex;align-items:flex-start;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-actions{display:flex;gap:6px;margin-top:7px}
+
+/* ── TABLE ── */
+@media(max-width:768px){.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}}
+.tbl-wrap{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.79rem;min-width:700px}
+thead th{background:var(--accent);color:#fff;padding:10px 11px;text-align:left;font-weight:600;white-space:nowrap;font-size:.74rem;letter-spacing:.03em}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--surface2)}
+tbody tr.tr-out{background:rgba(168,50,40,.04)}
+tbody tr.tr-low{background:rgba(138,95,0,.04)}
+td{padding:8px 11px;vertical-align:middle}
+.tthumb{width:48px;height:48px;object-fit:contain;border-radius:6px;border:1.5px solid var(--border);display:block;background:var(--surface2)}
+.tno-thumb{width:48px;height:35px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--border2)}
+.tc{color:var(--amber);font-weight:700}
+.ts{color:var(--green);font-weight:700}
+.tm.g{color:var(--green);font-weight:700}
+.tm.r{color:var(--red);font-weight:700}
+.tm.a{color:var(--amber);font-weight:700}
+.vbadge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.69rem;font-weight:700}
+.tstock-ctrl{display:flex;align-items:center;border:1.5px solid var(--border);border-radius:6px;overflow:hidden}
+.tsq-btn{width:28px;height:28px;border:none;background:var(--surface2);color:var(--text);font-size:.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;touch-action:manipulation}
+.tsq-btn:active{background:var(--border)}
+.tsq-num{width:40px;height:28px;border:none;border-left:1px solid var(--border);border-right:1px solid var(--border);background:var(--surface);font-size:.82rem;font-family:inherit;font-weight:700;text-align:center;color:var(--text)}
+.tsq-num:focus{outline:none;background:var(--accent-bg)}
+.t-sb{display:inline-block;padding:2px 7px;border-radius:12px;font-size:.68rem;font-weight:700;white-space:nowrap}
+.t-sb.ok{background:var(--green-bg);color:var(--green)}
+.t-sb.low{background:var(--amber-bg);color:var(--amber)}
+.t-sb.out{background:var(--red-bg);color:var(--red)}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{font-size:3rem;margin-bottom:14px}
+
+/* ── FAB ── */
+.fab{position:fixed;bottom:calc(20px + var(--safe-bottom));right:20px;z-index:400;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:1.5rem;cursor:pointer;box-shadow:0 4px 20px rgba(107,76,30,.5);display:flex;align-items:center;justify-content:center;transition:transform .15s;touch-action:manipulation}
+.fab:active{transform:scale(.93)}
+@media(min-width:481px){.fab{display:none}}
+.desk-add{display:inline-flex}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(30,26,18,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+@media(min-width:481px){.overlay{align-items:center;padding:16px}}
+.overlay.open{opacity:1;visibility:visible}
+.modal{background:var(--surface);width:100%;max-width:540px;border-radius:20px 20px 0 0;max-height:93dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);padding-bottom:calc(12px + var(--safe-bottom))}
+@media(min-width:481px){.modal{border-radius:16px;max-height:90dvh;transform:translateY(20px)}}
+.overlay.open .modal{transform:translateY(0)}
+.drag-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0}
+@media(min-width:481px){.drag-handle{display:none}}
+.mhead{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.mhead h2{font-family:'DM Serif Display',serif;font-size:1.1rem}
+.close-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text2);min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;border-radius:6px;touch-action:manipulation}
+.close-btn:hover{background:var(--surface2)}
+.mbody{padding:14px 18px}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:.7rem;font-weight:700;color:var(--text2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.fg input,.fg textarea{width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:16px;font-family:inherit;color:var(--text);background:var(--bg);transition:border .15s;min-height:44px}
+.fg input:focus,.fg textarea:focus{outline:none;border-color:var(--accent2)}
+.fg textarea{resize:vertical;min-height:66px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:380px){.frow{grid-template-columns:1fr}}
+.img-prev{width:100%;aspect-ratio:1/1;background:var(--surface2);border-radius:10px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--border2);margin-bottom:10px;overflow:hidden;position:relative;cursor:default;touch-action:none}
+.img-prev.has-img{border-style:solid;border-color:var(--border)}
+.img-prev canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+.img-crop-hint{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.68rem;color:rgba(255,255,255,.85);background:rgba(0,0,0,.35);padding:3px 0;pointer-events:none}
+.img-acts{display:grid;grid-template-columns:auto auto 1fr;gap:7px;align-items:center;margin-bottom:6px}
+.img-zoom-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.76rem;color:var(--text2)}
+.img-zoom-row input[type=range]{flex:1;accent-color:var(--accent)}
+.img-url-input{padding:10px 11px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:16px;font-family:inherit;background:var(--bg);color:var(--text);min-height:44px;width:100%}
+.img-url-input:focus{outline:none;border-color:var(--accent2)}
+.margin-hint{font-size:.78rem;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);color:var(--text2);margin-top:-6px;margin-bottom:10px;display:none}
+.mfoot{padding:10px 18px 6px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.thresh-info{font-size:.76rem;color:var(--text2);margin-top:8px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);line-height:1.6}
+
+/* ── SETUP SCREEN ── */
+#setupScreen{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;overflow-y:auto}
+.setup-card{background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:28px 24px;max-width:520px;width:100%;box-shadow:var(--shadow-lg);margin:auto}
+.setup-card h2{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:6px}
+.setup-card p{font-size:.85rem;color:var(--text2);margin-bottom:20px;line-height:1.65}
+.step{display:flex;gap:12px;margin-bottom:18px;align-items:flex-start}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body{flex:1}
+.step-body b{display:block;font-size:.88rem;margin-bottom:4px}
+.step-body p{font-size:.78rem;margin-bottom:0}
+.step-body a{color:var(--accent);text-decoration:underline}
+.config-box{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-top:14px}
+.config-box label{display:block;font-size:.7rem;font-weight:700;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px}
+.config-box input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:14px;font-family:inherit;color:var(--text);background:var(--surface);margin-bottom:10px;min-height:44px}
+.config-box input:focus{outline:none;border-color:var(--accent2)}
+.config-box input:last-child{margin-bottom:0}
+.config-err{font-size:.78rem;color:var(--red);margin-top:8px;display:none;padding:8px 12px;background:var(--red-bg);border-radius:var(--r-sm)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#1E1A12;color:#fff;padding:10px 20px;border-radius:30px;font-size:.82rem;font-weight:500;opacity:0;transition:all .25s;pointer-events:none;z-index:999;box-shadow:var(--shadow-lg);white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🪑 傢俱報價庫存</div>
+    <p class="login-sub">多裝置即時同步版<br>使用 Google 帳號登入，資料自動雲端儲存</p>
+    <button class="btn-google" id="btnGoogleLogin">
+      <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuMjcgMCAyNCAwIDExLjkgMCAyLjA2IDYuODYuMTIgMTYuNzdsNy45NiA2LjE5QzkuNjUgMTMuMTQgMTYuMzMgOS41IDI0IDkuNXoiLz48cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNNDYuOTggMjQuNTVjMC0xLjU3LS4xNS0zLjA5LS4zOC00LjU1SDI0djguNjFoMTIuOGMtLjU4IDIuOTYtMi4yNiA1LjQ4LTQuNzggNy4xN2w3LjczIDZjNC41MS00LjE4IDcuMjMtMTAuMzYgNy4yMy0xNy4yM3oiLz48cGF0aCBmaWxsPSIjRkJCQzA1IiBkPSJNMTAuMDggMjguNjJBMTQuODYgMTQuODYgMCAwIDEgOS41IDI0Yy0uMjEtMS41Ni0uMjEtMy4wOCAwLTQuNjJsMi44Ny0yLjIzYTEzLjg2IDEzLjg2IDAgMCAxIDIxLjE3LTEuNjNsNi4zOS02LjM5QTI0IDI0IDAgMCAwIC4xMiAxNi43N2w3Ljk2IDYuMTkiLz48cGF0aCBmaWxsPSIjMzRBODUzIiBkPSJNMjQgNDhjNi40OCAwIDExLjkzLTIuMTMgMTUuODktNS43OWwtNy43My02Yy0yLjE1IDEuNDUtNC44MyAyLjI5LTguMTYgMi4yOS02Ljc4IDAtMTIuNS00LjY0LTE0LjQyLTEwLjg5TDEuNjIgMzQuMzdDNS41MyA0Mi41NiAxNC4xNiA0OCAyNCA0OHoiLz48L3N2Zz4=" alt="Google">
+      使用 Google 帳號登入
+    </button>
+    <p class="login-note">⚡ 登入後資料會在您所有裝置上即時同步</p>
+    <p class="login-note" style="margin-top:6px">🔒 資料僅您本人可見</p>
+    <p class="login-note" style="margin-top:6px;color:#A83228">⚠️ 若按下後沒反應，請確認已在 Firebase → Authentication → Settings → 授權網域 加入您的網址（或 localhost）</p>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-ghost btn-sm" id="btnShowSetup" style="width:100%;font-size:.78rem">⚙️ 尚未設定 Firebase？點此查看步驟</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP GUIDE SCREEN -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <h2>⚙️ Firebase 設定指引</h2>
+    <p>只需要做一次，約 5 分鐘。完成後所有裝置都能同步。</p>
+
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <b>建立 Firebase 專案</b>
+        <p>前往 <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a>，點「新增專案」，取個名字（例如：my-furniture），關閉 Google Analytics，建立完成。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <b>啟用 Firestore 資料庫</b>
+        <p>左側選單 → 建構 → Firestore Database → 建立資料庫 → 選「正式版模式」→ 選亞洲地區（asia-east1）→ 完成。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <b>設定安全性規則</b>
+        <p>Firestore → 規則 → 把規則改成下面這樣，然後發布：</p>
+        <div style="background:#1E1A12;color:#e8e0d0;border-radius:8px;padding:12px;font-family:monospace;font-size:.75rem;margin-top:8px;line-height:1.7;white-space:pre-wrap">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+  }
+}</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <b>啟用 Google 登入</b>
+        <p>左側 → 建構 → Authentication → 開始使用 → Sign-in method → Google → 啟用 → 填入專案公開名稱 → 儲存。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <b>取得設定碼，填入下方</b>
+        <p>專案設定（齒輪）→ 一般 → 您的應用程式 → 網路應用程式（&lt;/&gt;）→ 取得 firebaseConfig 的值，填入下方：</p>
+      </div>
+    </div>
+
+    <div class="config-box">
+      <label>API Key</label>
+      <input id="cfgApiKey" type="text" placeholder="AIzaSy...">
+      <label>Auth Domain</label>
+      <input id="cfgAuthDomain" type="text" placeholder="your-project.firebaseapp.com">
+      <label>Project ID</label>
+      <input id="cfgProjectId" type="text" placeholder="your-project-id">
+      <label>App ID</label>
+      <input id="cfgAppId" type="text" placeholder="1:123456789:web:abc...">
+    </div>
+    <div class="config-err" id="cfgErr">請確認所有欄位都已填寫</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-ghost" id="btnHideSetup" style="flex:1;min-height:48px">← 返回</button>
+      <button class="btn btn-primary" id="btnSaveConfig" style="flex:2">儲存設定並重新載入</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until logged in) -->
+<div id="app" style="display:none">
+
+<header>
+  <div class="hdr-left">
+    <div class="logo">🪑 傢俱報價 <span class="logo-tag">雲端同步</span></div>
+    <div class="sync-area">
+      <div class="sync-dot" id="syncDot"></div>
+      <span class="sync-label" id="syncLabel">同步中…</span>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-white desk-add" id="btnDeskAdd" style="padding:5px 10px">＋ 新增</button>
+    <button class="btn btn-white" id="btnExport" title="匯出CSV" style="padding:5px 8px">↓</button>
+    <button class="btn btn-white" id="btnSettings" title="設定" style="padding:5px 8px">⚙️</button>
+    <div id="userAvatar" title="點擊登出" style="cursor:pointer"></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="toolbar-top">
+    <div class="search-wrap">
+      <span class="si">🔍</span>
+      <input id="q" type="text" placeholder="搜尋品名、廠商、型號…" oninput="render()">
+    </div>
+    <button class="icon-btn" id="ftoggle">⊟</button>
+  </div>
+  <div class="filter-panel" id="fpanel">
+    <div class="filter-inner">
+      <select id="vf" onchange="render()"><option value="">所有廠商</option></select>
+      <select id="cf" onchange="render()"><option value="">所有類別</option></select>
+      <div class="stock-filter-btns">
+        <button class="sfilter-btn" id="sfAll">全部</button>
+        <button class="sfilter-btn" id="sfOut">🔴 缺貨</button>
+        <button class="sfilter-btn" id="sfLow">🟡 低庫存</button>
+        <button class="sfilter-btn" id="sfOk">🟢 充足</button>
+      </div>
+    </div>
+  </div>
+  <div class="view-row">
+    <div class="view-btns">
+      <button id="vCard" class="active">⊞ 卡片</button>
+      <button id="vTable" class="tbl-btn">☰ 表格</button>
+    </div>
+    <select class="sort-sel" id="sf" onchange="render()">
+      <option value="stock_asc">庫存不足優先</option>
+      <option value="name">名稱</option>
+      <option value="vendor">廠商</option>
+      <option value="cost_d">進貨↓</option>
+      <option value="cost">進貨↑</option>
+      <option value="margin_d">毛利↓</option>
+      <option value="margin">毛利↑</option>
+    </select>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+<main id="main"></main>
+<button class="fab" id="btnFab">＋</button>
+
+</div><!-- end #app -->
+
+<!-- ITEM MODAL -->
+<div class="overlay" id="ov">
+  <div class="modal">
+    <div class="drag-handle"></div>
+    <div class="mhead">
+      <h2 id="mtitle">新增品項</h2>
+      <button class="close-btn" id="btnCloseModal">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="img-prev" id="imgPrev"><span>📷</span></div>
+      <div class="img-acts">
+        <input type="file" id="imgFile" accept="image/*;capture=camera" style="display:none">
+        <button class="btn btn-ghost btn-sm" id="btnPickImg">📷 拍照</button>
+        <button class="btn btn-ghost btn-sm" id="btnClearImg">✕</button>
+        <input class="img-url-input" id="imgUrl" type="url" placeholder="或貼圖片網址…">
+      </div>
+      <div class="img-zoom-row" id="imgZoomRow" style="display:none">
+        🔍 縮放
+        <input type="range" id="imgZoom" min="50" max="200" value="100" step="5">
+        <span id="imgZoomVal">100%</span>
+        <button class="btn btn-ghost btn-sm" id="btnResetImg" style="min-height:28px;padding:4px 10px;font-size:.72rem">重置</button>
+      </div>
+      <div style="height:11px"></div>
+      <div class="frow">
+        <div class="fg"><label>廠商 *</label><input id="fV" list="vdl" placeholder="台北家具行"><datalist id="vdl"></datalist></div>
+        <div class="fg"><label>類別</label><input id="fC" list="cdl" placeholder="沙發、餐桌…"><datalist id="cdl"></datalist></div>
+      </div>
+      <div class="fg"><label>品項名稱 *</label><input id="fN" placeholder="例：L型布沙發"></div>
+      <div class="frow">
+        <div class="fg"><label>型號</label><input id="fMo" placeholder="SF-2023A"></div>
+        <div class="fg"><label>規格</label><input id="fSp" placeholder="250×90×80cm"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>進貨價 (元)</label><input id="fCo" type="number" min="0" inputmode="numeric" placeholder="0" oninput="calcM()"></div>
+        <div class="fg"><label>售價 (元)</label><input id="fSe" type="number" min="0" inputmode="numeric" placeholder="0" oninput="calcM()"></div>
+      </div>
+      <div class="margin-hint" id="mhint"></div>
+      <div class="frow">
+        <div class="fg"><label>庫存數量</label><input id="fQty" type="number" min="0" inputmode="numeric" placeholder="0"></div>
+        <div class="fg"><label>材質</label><input id="fMa" placeholder="實木、米灰"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>到貨週期</label><input id="fSt" placeholder="現貨 / 3–4週"></div>
+        <div class="fg"></div>
+      </div>
+      <div class="fg"><label>備註</label><textarea id="fNo" placeholder="其他說明…"></textarea></div>
+      <input type="hidden" id="eid">
+      <input type="hidden" id="imgData">
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" id="btnCancelModal" style="min-height:44px">取消</button>
+      <button class="btn btn-primary" id="btnSaveItem" style="flex:1">儲存品項</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="sovl" style="z-index:510">
+  <div class="modal" style="max-width:400px">
+    <div class="drag-handle"></div>
+    <div class="mhead">
+      <h2>⚙️ 庫存閾值設定</h2>
+      <button class="close-btn" id="btnCloseSettings">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="settings-grid">
+        <div class="fg"><label>缺貨閾值（≤）</label><input id="sOut" type="number" min="0" inputmode="numeric" value="0"></div>
+        <div class="fg"><label>低庫存閾值（≤）</label><input id="sLow" type="number" min="1" inputmode="numeric" value="5"></div>
+      </div>
+      <div class="thresh-info" id="threshPreview"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" id="btnCancelSettings" style="min-height:44px">取消</button>
+      <button class="btn btn-primary" id="btnApplySettings" style="flex:1">套用</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── CONFIG ────────────────────────────────────────────
+const STORED_CFG = JSON.parse(localStorage.getItem('fb_cfg') || 'null');
+const firebaseConfig = STORED_CFG || { apiKey:'', authDomain:'', projectId:'', appId:'' };
+
+let app, auth, db, unsubItems = null;
+let items = [];
+let cfg = JSON.parse(localStorage.getItem('inv_cfg') || '{"outT":0,"lowT":5}');
+let view = 'card', filtersOpen = false, stockFilter = 'all';
+let currentUser = null;
+
+// ── HELPERS ───────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+function mgn(c,s) { if(!c||!s||+c===0) return null; return Math.round(((+s-+c)/+s)*100); }
+function mc(m) { if(m===null) return ''; if(m>=40) return 'g'; if(m>=25) return 'a'; return 'r'; }
+function stockClass(q) {
+  const n=+q||0;
+  if(n<=cfg.outT) return 'out';
+  if(n<=cfg.lowT) return 'low';
+  return 'ok';
+}
+function stockLabel(q) { const s=stockClass(q); return s==='out'?'缺貨':s==='low'?'低庫存':'充足'; }
+const VC=['#6B4C1E','#276744','#1A4E7A','#6B2F8A','#8A5F00','#9A3828','#2D6B6B','#5A3E1B'];
+const vcm={};
+function vc(v) { if(!vcm[v]) vcm[v]=VC[Object.keys(vcm).length%VC.length]; return vcm[v]; }
+function showToast(msg) {
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+function setSyncStatus(s) {
+  $('syncDot').className='sync-dot '+s;
+  $('syncLabel').textContent=s==='synced'?'已同步':s==='syncing'?'同步中…':'同步失敗';
+}
+
+// ── INIT ──────────────────────────────────────────────
+function tryInit() {
+  if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+    $('loginScreen').style.display='flex';
+    return;
+  }
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+
+    const GOOGLE_BTN = `<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuMjcgMCAyNCAwIDExLjkgMCAyLjA2IDYuODYuMTIgMTYuNzdsNy45NiA2LjE5QzkuNjUgMTMuMTQgMTYuMzMgOS41IDI0IDkuNXoiLz48cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNNDYuOTggMjQuNTVjMC0xLjU3LS4xNS0zLjA5LS4zOC00LjU1SDI0djguNjFoMTIuOGMtLjU4IDIuOTYtMi4yNiA1LjQ4LTQuNzggNy4xN2w3LjczIDZjNC41MS00LjE4IDcuMjMtMTAuMzYgNy4yMy0xNy4yM3oiLz48cGF0aCBmaWxsPSIjRkJCQzA1IiBkPSJNMTAuMDggMjguNjJBMTQuODYgMTQuODYgMCAwIDEgOS41IDI0Yy0uMjEtMS41Ni0uMjEtMy4wOCAwLTQuNjJsMi44Ny0yLjIzYTEzLjg2IDEzLjg2IDAgMCAxIDIxLjE3LTEuNjNsNi4zOS02LjM5QTI0IDI0IDAgMCAwIC4xMiAxNi43N2w3Ljk2IDYuMTkiLz48cGF0aCBmaWxsPSIjMzRBODUzIiBkPSJNMjQgNDhjNi40OCAwIDExLjkzLTIuMTMgMTUuODktNS43OWwtNy43My02Yy0yLjE1IDEuNDUtNC44MyAyLjI5LTguMTYgMi4yOS02Ljc4IDAtMTIuNS00LjY0LTE0LjQyLTEwLjg5TDEuNjIgMzQuMzdDNS41MyA0Mi41NiAxNC4xNiA0OCAyNCA0OHoiLz48L3N2Zz4=" alt="Google"> 使用 Google 帳號登入`;
+
+    function showApp(user) {
+      currentUser = user;
+      $('loginScreen').style.display = 'none';
+      $('setupScreen').style.display = 'none';
+      $('app').style.display = 'block';
+      const el = $('userAvatar');
+      el.innerHTML = user.photoURL
+        ? `<img class="user-avatar" src="${user.photoURL}" alt="頭像">`
+        : `<div class="user-initial">${(user.displayName||user.email||'?')[0].toUpperCase()}</div>`;
+      listenToItems(user.uid);
+    }
+
+    function showLogin() {
+      currentUser = null;
+      $('app').style.display = 'none';
+      $('loginScreen').style.display = 'flex';
+      $('btnGoogleLogin').innerHTML = GOOGLE_BTN;
+      $('btnGoogleLogin').disabled = false;
+      if (unsubItems) { unsubItems(); unsubItems = null; }
+    }
+
+    // onAuthStateChanged is the single source of truth.
+    // Firebase persists the session in IndexedDB — on page reload
+    // it will emit the logged-in user within ~200ms without any redirect needed.
+    let authResolved = false;
+    onAuthStateChanged(auth, user => {
+      authResolved = true;
+      if (user) {
+        showApp(user);
+      } else {
+        showLogin();
+      }
+    });
+
+    // Safety: if Firebase hasn't resolved in 5s, show the login button anyway
+    setTimeout(() => {
+      if (!authResolved) {
+        $('btnGoogleLogin').innerHTML = GOOGLE_BTN;
+        $('btnGoogleLogin').disabled = false;
+      }
+    }, 5000);
+
+  } catch(e) {
+    console.error(e);
+    showToast('Firebase 設定有誤，請重新設定');
+    $('loginScreen').style.display='flex';
+    $('btnGoogleLogin').disabled = false;
+  }
+}
+
+// ── AUTH ──────────────────────────────────────────────
+async function signIn() {
+  if (!auth) { showToast('請先完成 Firebase 設定'); return; }
+  try {
+    $('btnGoogleLogin').textContent = '登入中…';
+    $('btnGoogleLogin').disabled = true;
+    // signInWithPopup works on https:// (GitHub Pages / Netlify)
+    // The popup is triggered directly by user click so browsers allow it
+    await signInWithPopup(auth, new GoogleAuthProvider());
+    // onAuthStateChanged will fire automatically with the new user
+  } catch(e) {
+    console.error(e);
+    $('btnGoogleLogin').disabled = false;
+    $('btnGoogleLogin').textContent = '使用 Google 帳號登入';
+    if (e.code === 'auth/popup-blocked') {
+      showToast('彈出視窗被封鎖，請允許後重試');
+    } else if (e.code !== 'auth/popup-closed-by-user') {
+      showToast('登入失敗：' + e.message);
+    }
+  }
+}
+
+// ── FIRESTORE ─────────────────────────────────────────
+function listenToItems(uid) {
+  setSyncStatus('syncing');
+  unsubItems = onSnapshot(collection(db,'users',uid,'items'),
+    snap => { items=snap.docs.map(d=>({id:d.id,...d.data()})); render(); setSyncStatus('synced'); },
+    err  => { console.error(err); setSyncStatus('error'); showToast('同步失敗，請檢查網路'); }
+  );
+}
+async function writeItem(data) {
+  if(!currentUser) return;
+  setSyncStatus('syncing');
+  await setDoc(doc(db,'users',currentUser.uid,'items',data.id), data);
+}
+async function removeItem(id) {
+  if(!currentUser) return;
+  setSyncStatus('syncing');
+  await deleteDoc(doc(db,'users',currentUser.uid,'items',id));
+}
+
+// ── FILTERS & RENDER ──────────────────────────────────
+function filtered() {
+  const q=$('q').value.toLowerCase();
+  const vf=$('vf').value, cf=$('cf').value, srt=$('sf').value;
+  let list=items.filter(i=>{
+    const ok=!q||[i.n,i.v,i.mo,i.c,i.ma,i.no,i.sp].some(f=>(f||'').toLowerCase().includes(q));
+    let sc=true;
+    if(stockFilter==='out') sc=stockClass(i.qty)==='out';
+    else if(stockFilter==='low') sc=stockClass(i.qty)==='low';
+    else if(stockFilter==='ok') sc=stockClass(i.qty)==='ok';
+    return ok&&(!vf||i.v===vf)&&(!cf||i.c===cf)&&sc;
+  });
+  list.sort((a,b)=>{
+    if(srt==='stock_asc'){const o={out:0,low:1,ok:2},sa=o[stockClass(a.qty)],sb=o[stockClass(b.qty)];return sa!==sb?sa-sb:(+a.qty||0)-(+b.qty||0);}
+    if(srt==='cost'||srt==='cost_d'){const d=(+a.co||0)-(+b.co||0);return srt==='cost'?d:-d;}
+    if(srt==='margin'||srt==='margin_d'){const ma=mgn(a.co,a.se)??-999,mb=mgn(b.co,b.se)??-999;return srt==='margin'?ma-mb:mb-ma;}
+    if(srt==='vendor') return (a.v||'').localeCompare(b.v||'');
+    return (a.n||'').localeCompare(b.n||'');
+  });
+  return list;
+}
+
+function updateSelects() {
+  const vs=[...new Set(items.map(i=>i.v).filter(Boolean))].sort();
+  const cs=[...new Set(items.map(i=>i.c).filter(Boolean))].sort();
+  const vf=$('vf'),cf=$('cf'),vs0=vf.value,cs0=cf.value;
+  vf.innerHTML='<option value="">所有廠商</option>'+vs.map(v=>`<option${v===vs0?' selected':''}>${v}</option>`).join('');
+  cf.innerHTML='<option value="">所有類別</option>'+cs.map(c=>`<option${c===cs0?' selected':''}>${c}</option>`).join('');
+  $('vdl').innerHTML=vs.map(v=>`<option value="${v}">`).join('');
+  $('cdl').innerHTML=cs.map(c=>`<option value="${c}">`).join('');
+}
+
+function setStockFilter(f) {
+  stockFilter=f;
+  ['sfAll','sfOut','sfLow','sfOk'].forEach(id=>$(id).className='sfilter-btn');
+  if(f==='out') $('sfOut').className='sfilter-btn active-out';
+  else if(f==='low') $('sfLow').className='sfilter-btn active-low';
+  else if(f==='ok') $('sfOk').className='sfilter-btn active-ok';
+  render();
+}
+
+function render() {
+  updateSelects();
+  const list=filtered();
+  const allOut=items.filter(i=>stockClass(i.qty)==='out').length;
+  const allLow=items.filter(i=>stockClass(i.qty)==='low').length;
+  const allOk =items.filter(i=>stockClass(i.qty)==='ok').length;
+  const tc=list.reduce((s,i)=>s+(+i.co||0),0);
+  const ms=list.filter(i=>i.co&&i.se).map(i=>mgn(i.co,i.se));
+  const avg=ms.length?Math.round(ms.reduce((a,b)=>a+b,0)/ms.length):null;
+  $('stats').innerHTML=
+    `<div class="sstat neutral">顯示 <b>${list.length}</b>筆</div><span class="sdiv">|</span>
+     <div class="sstat danger">缺貨 <b>${allOut}</b>項</div><span class="sdiv">|</span>
+     <div class="sstat warn">低庫存 <b>${allLow}</b>項</div><span class="sdiv">|</span>
+     <div class="sstat ok">充足 <b>${allOk}</b>項</div><span class="sdiv">|</span>
+     <div class="sstat neutral">進貨合計 <b>$${tc.toLocaleString()}</b></div><span class="sdiv">|</span>
+     <div class="sstat neutral">均毛利 <b>${avg!==null?avg+'%':'—'}</b></div>`;
+  if(view==='table') renderTable(list);
+  else renderCards(list);
+}
+
+function renderCards(list) {
+  const el=$('main');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p style="font-weight:700;margin-bottom:6px">沒有品項</p><p style="font-size:.85rem">點右下角 ＋ 新增</p></div>';return;}
+  el.innerHTML=`<div class="grid">${list.map(it=>{
+    const color=vc(it.v||''),m=mgn(it.co,it.se),mcs=mc(m),qty=+it.qty||0,sc=stockClass(qty);
+    const sbCls=sc==='out'?'sb-out':sc==='low'?'sb-low':'sb-ok';
+    const imgH=it.img?`<img src="${it.img}" alt="${it.n}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`:'';
+    const noStyle=it.img?'style="display:none"':'';
+    return `<div class="card ${sc==='out'?'out-stock':sc==='low'?'low-stock':''}">
+      <div class="card-img">${imgH}<div class="no-img" ${noStyle}>🛋️</div>
+        <div class="vtag" style="background:${color}e8">${it.v||''}</div>
+        <div class="stock-badge ${sbCls}">${stockLabel(qty)}</div></div>
+      <div class="card-body">
+        <div class="card-name">${it.n}</div>
+        <div class="card-sub">${[it.mo,it.sp,it.ma].filter(Boolean).join(' · ')}</div>
+        <div class="price-row">
+          ${it.co?`<span class="chip chip-c">進 $${(+it.co).toLocaleString()}</span>`:''}
+          ${it.se?`<span class="chip chip-s">售 $${(+it.se).toLocaleString()}</span>`:''}
+          ${m!==null?`<span class="chip chip-m ${mcs}">毛利 ${m}%</span>`:''}
+        </div>
+        <div class="stock-ctrl ${sc}">
+          <button class="sq-btn" data-action="minus" data-id="${it.id}" ${qty<=0?'disabled':''}>－</button>
+          <input class="sq-num" type="number" min="0" inputmode="numeric" value="${qty}" data-action="setqty" data-id="${it.id}" onfocus="this.select()">
+          <button class="sq-btn" data-action="plus" data-id="${it.id}">＋</button>
+          <span class="sq-label">件</span>
+        </div>
+        ${it.st?`<div class="card-note">📦 ${it.st}</div>`:''}
+        ${it.no?`<div class="card-note" title="${it.no}">📝 ${it.no}</div>`:''}
+        <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${it.id}" style="flex:1">✏️ 編輯</button>
+          <button class="btn btn-danger btn-sm" data-action="del" data-id="${it.id}">🗑</button>
+        </div>
+      </div></div>`;
+  }).join('')}</div>`;
+}
+
+function renderTable(list) {
+  const el=$('main');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">📦</div><p style="font-weight:700">沒有品項</p></div>';return;}
+  el.innerHTML=`<div class="tbl-wrap"><table>
+    <thead><tr><th>圖</th><th>廠商</th><th>類別</th><th>品名</th><th>型號</th><th>規格</th><th>材質</th><th>進貨價</th><th>售價</th><th>毛利率</th><th>庫存</th><th>狀態</th><th>到貨</th><th>備註</th><th>操作</th></tr></thead>
+    <tbody>${list.map(it=>{
+      const color=vc(it.v||''),m=mgn(it.co,it.se),mcs=mc(m),qty=+it.qty||0,sc=stockClass(qty);
+      const th=it.img?`<img class="tthumb" src="${it.img}" onerror="this.outerHTML='<div class=\\'tno-thumb\\'>🛋️</div>'">`:`<div class="tno-thumb">🛋️</div>`;
+      return `<tr class="${sc==='out'?'tr-out':sc==='low'?'tr-low':''}">
+        <td>${th}</td>
+        <td><span class="vbadge" style="background:${color}18;color:${color}">${it.v||''}</span></td>
+        <td style="color:var(--text2)">${it.c||''}</td><td><strong>${it.n}</strong></td>
+        <td style="color:var(--text2);font-size:.74rem">${it.mo||''}</td>
+        <td style="font-size:.74rem">${it.sp||''}</td><td style="font-size:.74rem">${it.ma||''}</td>
+        <td class="tc">${it.co?'$'+(+it.co).toLocaleString():'—'}</td>
+        <td class="ts">${it.se?'$'+(+it.se).toLocaleString():'—'}</td>
+        <td class="tm ${mcs}">${m!==null?m+'%':'—'}</td>
+        <td><div class="tstock-ctrl">
+          <button class="tsq-btn" data-action="minus" data-id="${it.id}" ${qty<=0?'disabled':''}>－</button>
+          <input class="tsq-num" type="number" min="0" inputmode="numeric" value="${qty}" data-action="setqty" data-id="${it.id}" onfocus="this.select()">
+          <button class="tsq-btn" data-action="plus" data-id="${it.id}">＋</button>
+        </div></td>
+        <td><span class="t-sb ${sc}">${stockLabel(qty)}</span></td>
+        <td style="font-size:.74rem;white-space:nowrap">${it.st||''}</td>
+        <td style="font-size:.72rem;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.no||''}</td>
+        <td><div style="display:flex;gap:5px">
+          <button class="btn btn-ghost btn-sm" data-action="edit" data-id="${it.id}">✏️</button>
+          <button class="btn btn-danger btn-sm" data-action="del" data-id="${it.id}">🗑</button>
+        </div></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+// ── STOCK ─────────────────────────────────────────────
+async function adjQty(id,delta) {
+  const it=items.find(i=>i.id===id); if(!it) return;
+  it.qty=Math.max(0,(+it.qty||0)+delta);
+  await writeItem(it);
+}
+async function setQty(id,val) {
+  const it=items.find(i=>i.id===id); if(!it) return;
+  it.qty=Math.max(0,parseInt(val)||0);
+  await writeItem(it);
+}
+
+// ── MODAL ─────────────────────────────────────────────
+function openModal() {
+  ['fV','fC','fN','fMo','fSp','fCo','fSe','fQty','fSt','fMa','fNo'].forEach(id=>$(id).value='');
+  $('eid').value=''; $('imgData').value=''; $('imgUrl').value='';
+  $('mhint').style.display='none';
+  srcImage=null;
+  updateImgPrev('');
+  $('mtitle').textContent='新增品項';
+  $('ov').classList.add('open');
+  setTimeout(()=>$('fV').focus(),320);
+}
+function closeModal() { $('ov').classList.remove('open'); }
+
+function editItem(id) {
+  const it=items.find(i=>i.id===id); if(!it) return;
+  $('fV').value=it.v||''; $('fC').value=it.c||''; $('fN').value=it.n||'';
+  $('fMo').value=it.mo||''; $('fSp').value=it.sp||'';
+  $('fCo').value=it.co||''; $('fSe').value=it.se||'';
+  $('fQty').value=it.qty!=null?it.qty:'';
+  $('fSt').value=it.st||''; $('fMa').value=it.ma||''; $('fNo').value=it.no||'';
+  $('eid').value=it.id; $('imgData').value=it.img||''; $('imgUrl').value='';
+  updateImgPrev(it.img||'');
+  calcM();
+  $('mtitle').textContent='編輯品項';
+  $('ov').classList.add('open');
+}
+
+async function delItem(id) {
+  if(!confirm('確定刪除此品項？')) return;
+  await removeItem(id); showToast('已刪除');
+}
+
+async function saveItem() {
+  const n=$('fN').value.trim(), v=$('fV').value.trim();
+  if(!n||!v){alert('請填寫廠商名稱與品項名稱');return;}
+  // Crop/compress image before saving
+  const img = document.getElementById('cropImg') ? cropToCanvas() : ($('imgData').value||$('imgUrl').value.trim());
+  await writeItem({
+    id:$('eid').value||uid(), v, c:$('fC').value.trim(), n,
+    mo:$('fMo').value.trim(), sp:$('fSp').value.trim(),
+    co:$('fCo').value, se:$('fSe').value,
+    qty:parseInt($('fQty').value)||0,
+    st:$('fSt').value.trim(), ma:$('fMa').value.trim(),
+    no:$('fNo').value.trim(), img, updatedAt:Date.now()
+  });
+  closeModal(); showToast('已儲存 ✓');
+}
+
+// ── IMAGE ──────────────────────────────────────────────
+// Strategy: use a <canvas> as the preview. Preview and saved image use identical
+// draw logic so what-you-see is exactly what gets stored.
+//
+// cropState.scale : zoom multiplier (1 = fit whole image inside preview)
+// cropState.ox/oy : pan offset in *preview canvas pixels* (not screen pixels)
+//
+let srcImage  = null;
+let cropState = { scale: 1, ox: 0, oy: 0 };
+let isDragging = false, dragStart = { x:0, y:0 }, dragOrigin = { ox:0, oy:0 };
+let lastTouchDist = 0;
+
+// ── Compress large files before storing in Firestore (<1 MB limit) ──
+function compressImage(dataUrl, maxPx=1200, quality=0.85) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let { width:w, height:h } = img;
+      if (w > maxPx || h > maxPx) {
+        const r = Math.min(maxPx/w, maxPx/h);
+        w = Math.round(w*r); h = Math.round(h*r);
+      }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+// ── Core draw: works for any canvas size ──────────────
+// At scale=1 the whole image fits inside the canvas (contain).
+// ox/oy shift the image centre relative to the canvas centre.
+function drawToCanvas(canvas) {
+  const ctx = canvas.getContext('2d');
+  const cw = canvas.width, ch = canvas.height;
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.fillStyle = '#EFECE6';
+  ctx.fillRect(0, 0, cw, ch);
+  if (!srcImage) return;
+
+  const iw = srcImage.naturalWidth, ih = srcImage.naturalHeight;
+
+  // contain: scale so the whole image fits in the canvas
+  const fitScale = Math.min(cw / iw, ch / ih);
+  const drawW = iw * fitScale * cropState.scale;
+  const drawH = ih * fitScale * cropState.scale;
+
+  // centre of canvas + pan offset
+  const dx = (cw - drawW) / 2 + cropState.ox;
+  const dy = (ch - drawH) / 2 + cropState.oy;
+
+  // No clip — draw the full image without cutting anything off
+  ctx.drawImage(srcImage, dx, dy, drawW, drawH);
+}
+
+// ── Preview helpers ────────────────────────────────────
+function getPC() { return document.getElementById('previewCanvas'); }
+
+function redrawPreview() {
+  const pc = getPC();
+  if (pc && srcImage) drawToCanvas(pc);
+}
+
+// ── Load image into preview ────────────────────────────
+function updateImgPrev(src) {
+  const p = $('imgPrev');
+  const zoomRow = $('imgZoomRow');
+  srcImage = null;
+  cropState = { scale: 1, ox: 0, oy: 0 };
+
+  if (!src) {
+    p.innerHTML = '<span>📷</span>';
+    p.classList.remove('has-img');
+    zoomRow.style.display = 'none';
+    $('imgZoom').value = 100;
+    $('imgZoomVal').textContent = '100%';
+    return;
+  }
+
+  const img = new Image();
+  img.onload = () => {
+    srcImage = img;
+    p.classList.add('has-img');
+
+    // Always square canvas (matches the square preview box).
+    // drawToCanvas uses contain logic so the full image shows with letterbox/pillarbox.
+    const SZ = 600;
+    p.innerHTML =
+      `<canvas id="previewCanvas" width="${SZ}" height="${SZ}"
+        style="position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none"></canvas>
+       <div class="img-crop-hint">拖曳移動 · 滾輪/滑桿縮放</div>`;
+
+    zoomRow.style.display = 'flex';
+    $('imgZoom').value = 100;
+    $('imgZoomVal').textContent = '100%';
+    redrawPreview();
+    setupCropEvents();
+  };
+  img.onerror = () => {
+    p.innerHTML = '<span style="font-size:1rem;color:var(--red)">圖片無法載入</span>';
+    p.classList.remove('has-img');
+    zoomRow.style.display = 'none';
+  };
+  img.src = src;
+}
+
+// ── Pan delta: screen px → canvas px ──────────────────
+function screenToCanvas(dx, dy) {
+  const pc = getPC(); if (!pc) return { dx:0, dy:0 };
+  const rect = pc.getBoundingClientRect();
+  // ratio of canvas logical pixels to displayed pixels
+  const rx = pc.width  / rect.width;
+  const ry = pc.height / rect.height;
+  return { dx: dx * rx, dy: dy * ry };
+}
+
+// ── Events ────────────────────────────────────────────
+function setupCropEvents() {
+  const pc = getPC(); if (!pc) return;
+
+  pc.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStart  = { x: e.clientX, y: e.clientY };
+    dragOrigin = { ox: cropState.ox, oy: cropState.oy };
+    pc.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const { dx, dy } = screenToCanvas(e.clientX - dragStart.x, e.clientY - dragStart.y);
+    cropState.ox = dragOrigin.ox + dx;
+    cropState.oy = dragOrigin.oy + dy;
+    redrawPreview();
+  });
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    const pc2 = getPC(); if (pc2) pc2.style.cursor = 'grab';
+  });
+
+  pc.addEventListener('wheel', e => {
+    e.preventDefault();
+    cropState.scale = Math.min(5, Math.max(0.1, cropState.scale * (1 - e.deltaY * 0.001)));
+    const pct = Math.round(cropState.scale * 100);
+    $('imgZoom').value = pct; $('imgZoomVal').textContent = pct + '%';
+    redrawPreview();
+  }, { passive: false });
+
+  pc.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      dragStart  = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      dragOrigin = { ox: cropState.ox, oy: cropState.oy };
+    } else if (e.touches.length === 2) {
+      isDragging = false;
+      lastTouchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  pc.addEventListener('touchmove', e => {
+    if (e.touches.length === 1 && isDragging) {
+      const { dx, dy } = screenToCanvas(
+        e.touches[0].clientX - dragStart.x,
+        e.touches[0].clientY - dragStart.y);
+      cropState.ox = dragOrigin.ox + dx;
+      cropState.oy = dragOrigin.oy + dy;
+      redrawPreview();
+    } else if (e.touches.length === 2) {
+      const d = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY);
+      if (lastTouchDist > 0) {
+        cropState.scale = Math.min(5, Math.max(0.1, cropState.scale * (d / lastTouchDist)));
+        const pct = Math.round(cropState.scale * 100);
+        $('imgZoom').value = pct; $('imgZoomVal').textContent = pct + '%';
+        redrawPreview();
+      }
+      lastTouchDist = d;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  pc.addEventListener('touchend', () => { isDragging = false; lastTouchDist = 0; });
+}
+
+function resetImgTransform() {
+  cropState = { scale: 1, ox: 0, oy: 0 };
+  $('imgZoom').value = 100; $('imgZoomVal').textContent = '100%';
+  redrawPreview();
+}
+
+// ── Export: square canvas, same contain+letterbox as preview ──
+function cropToCanvas() {
+  if (!srcImage) return $('imgData').value || $('imgUrl').value.trim();
+  const SZ = 600;
+  const c = document.createElement('canvas');
+  c.width = SZ; c.height = SZ;
+  // ox/oy are already in preview canvas pixels (which is also SZ×SZ) — no conversion needed
+  drawToCanvas(c);
+  return c.toDataURL('image/jpeg', 0.88);
+}
+
+function calcM() {
+  const c=+$('fCo').value, s=+$('fSe').value, h=$('mhint');
+  if(c>0&&s>0){
+    const m=Math.round(((s-c)/s)*100);
+    const col=m>=40?'var(--green)':m>=25?'var(--amber)':'var(--red)';
+    h.style.display='block';
+    h.innerHTML=`毛利率 <strong style="color:${col}">${m}%</strong>　每件獲利 <strong style="color:${col}">$${(s-c).toLocaleString()}</strong>`;
+  } else { h.style.display='none'; }
+}
+
+// ── SETTINGS ──────────────────────────────────────────
+function openSettings() {
+  $('sOut').value=cfg.outT; $('sLow').value=cfg.lowT;
+  updateThreshPreview();
+  $('sovl').classList.add('open');
+}
+function closeSetting() { $('sovl').classList.remove('open'); }
+function updateThreshPreview() {
+  const o=+$('sOut').value||0, l=+$('sLow').value||5;
+  $('threshPreview').innerHTML=`🔴 缺貨：庫存 ≤ <strong>${o}</strong> 件<br>🟡 低庫存：庫存 ${o+1}–<strong>${l}</strong> 件<br>🟢 充足：庫存 ≥ <strong>${l+1}</strong> 件`;
+}
+
+// ── EXPORT ────────────────────────────────────────────
+function exportCSV() {
+  const h=['廠商','類別','品名','型號','規格','材質','進貨價','售價','毛利率','庫存','庫存狀態','到貨週期','備註'];
+  const rows=items.map(i=>[i.v,i.c,i.n,i.mo,i.sp,i.ma,i.co,i.se,
+    mgn(i.co,i.se)!==null?mgn(i.co,i.se)+'%':'',i.qty||0,stockLabel(i.qty),i.st,i.no
+  ].map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`));
+  const csv='\uFEFF'+[h,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`傢俱報價_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); showToast('CSV 匯出完成 ↓');
+}
+
+// ── SETUP SCREEN ──────────────────────────────────────
+function showSetup() {
+  $('loginScreen').style.display='none';
+  $('setupScreen').style.display='flex';
+  const s=JSON.parse(localStorage.getItem('fb_cfg')||'{}');
+  if(s.apiKey) $('cfgApiKey').value=s.apiKey;
+  if(s.authDomain) $('cfgAuthDomain').value=s.authDomain;
+  if(s.projectId) $('cfgProjectId').value=s.projectId;
+  if(s.appId) $('cfgAppId').value=s.appId;
+}
+function hideSetup() {
+  $('setupScreen').style.display='none';
+  $('loginScreen').style.display='flex';
+}
+function saveConfig() {
+  const apiKey=$('cfgApiKey').value.trim(), authDomain=$('cfgAuthDomain').value.trim();
+  const projectId=$('cfgProjectId').value.trim(), appId=$('cfgAppId').value.trim();
+  if(!apiKey||!authDomain||!projectId||!appId){$('cfgErr').style.display='block';return;}
+  $('cfgErr').style.display='none';
+  localStorage.setItem('fb_cfg',JSON.stringify({apiKey,authDomain,projectId,appId}));
+  location.reload();
+}
+
+// ── BIND ALL EVENTS (no onclick in HTML) ──────────────
+// Login screen
+$('btnGoogleLogin').addEventListener('click', signIn);
+$('btnShowSetup').addEventListener('click', showSetup);
+// Setup screen
+$('btnHideSetup').addEventListener('click', hideSetup);
+$('btnSaveConfig').addEventListener('click', saveConfig);
+// Header
+$('btnDeskAdd').addEventListener('click', openModal);
+$('btnFab').addEventListener('click', openModal);
+$('btnExport').addEventListener('click', exportCSV);
+$('btnSettings').addEventListener('click', openSettings);
+$('userAvatar').addEventListener('click', ()=>{ if(confirm('確定要登出嗎？')) signOut(auth); });
+// Toolbar
+$('ftoggle').addEventListener('click', ()=>{
+  filtersOpen=!filtersOpen;
+  $('fpanel').classList.toggle('open',filtersOpen);
+  $('ftoggle').classList.toggle('active',filtersOpen);
+});
+$('sfAll').addEventListener('click', ()=>setStockFilter('all'));
+$('sfOut').addEventListener('click', ()=>setStockFilter('out'));
+$('sfLow').addEventListener('click', ()=>setStockFilter('low'));
+$('sfOk').addEventListener('click',  ()=>setStockFilter('ok'));
+$('vCard').addEventListener('click',  ()=>{ view='card'; $('vCard').classList.add('active'); $('vTable').classList.remove('active'); render(); });
+$('vTable').addEventListener('click', ()=>{ view='table'; $('vTable').classList.add('active'); $('vCard').classList.remove('active'); render(); });
+// Modal close on backdrop
+$('ov').addEventListener('click',   e=>{ if(e.target===$('ov'))   closeModal(); });
+$('sovl').addEventListener('click', e=>{ if(e.target===$('sovl')) closeSetting(); });
+// Modal buttons
+$('btnCloseModal').addEventListener('click',  closeModal);
+$('btnCancelModal').addEventListener('click', closeModal);
+$('btnSaveItem').addEventListener('click',    saveItem);
+// Settings buttons
+$('btnCloseSettings').addEventListener('click',  closeSetting);
+$('btnCancelSettings').addEventListener('click', closeSetting);
+$('btnApplySettings').addEventListener('click', ()=>{
+  const o=Math.max(0,+$('sOut').value||0), l=Math.max(o+1,+$('sLow').value||5);
+  cfg={outT:o,lowT:l};
+  localStorage.setItem('inv_cfg',JSON.stringify(cfg));
+  closeSetting(); render(); showToast('設定已套用 ✓');
+});
+$('sOut').addEventListener('input', updateThreshPreview);
+$('imgZoom').addEventListener('input', e=>{
+  cropState.scale = +e.target.value/100;
+  $('imgZoomVal').textContent = e.target.value+'%';
+  redrawPreview();
+});
+$('sLow').addEventListener('input', updateThreshPreview);
+// Image
+$('btnPickImg').addEventListener('click', ()=>$('imgFile').click());
+$('btnClearImg').addEventListener('click', ()=>{
+  $('imgData').value=''; $('imgUrl').value='';
+  srcImage=null;
+  updateImgPrev('');
+});
+$('imgFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload = async ev => {
+    const compressed = await compressImage(ev.target.result);
+    $('imgData').value = compressed;  // store compressed base64 for fallback
+    updateImgPrev(compressed);
+  };
+  r.readAsDataURL(f);
+});
+$('btnResetImg').addEventListener('click', resetImgTransform);
+$('imgUrl').addEventListener('input', e=>{
+  const url=e.target.value.trim(); if(!url) return;
+  $('imgData').value='';
+  updateImgPrev(url);
+});
+// Inputs in modal
+$('fCo').addEventListener('input', calcM);
+$('fSe').addEventListener('input', calcM);
+// Stock adjust via event delegation
+document.addEventListener('click', e=>{
+  const btn=e.target.closest('[data-action]'); if(!btn) return;
+  const {action,id}=btn.dataset;
+  if(action==='minus') adjQty(id,-1);
+  else if(action==='plus') adjQty(id,1);
+  else if(action==='edit') editItem(id);
+  else if(action==='del') delItem(id);
+});
+document.addEventListener('change', e=>{
+  if(e.target.dataset.action==='setqty') setQty(e.target.dataset.id,e.target.value);
+});
+window.addEventListener('resize', ()=>{ render(); });
+
+tryInit();
+</script>
+</body>
+</html>
