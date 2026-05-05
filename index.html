@@ -599,37 +599,30 @@ function tryInit() {
 
 // ── AUTH ──────────────────────────────────────────────
 async function signIn() {
-  // Step 1: check auth object
   if (!auth) {
-    alert('❌ 步驟1失敗：Firebase auth 未初始化，請重新設定 Firebase 設定碼');
+    showToast('請先完成 Firebase 設定');
     return;
   }
   try {
-    $('btnGoogleLogin').textContent = '⏳ 開啟登入視窗…';
+    $('btnGoogleLogin').textContent = '登入中…';
     $('btnGoogleLogin').disabled = true;
     console.log('signIn: calling signInWithPopup...');
-    // Step 2: open popup
     const result = await signInWithPopup(auth, new GoogleAuthProvider());
-    console.log('signIn: popup success, user=', result.user.email);
-    // Step 3: onAuthStateChanged will handle UI
+    console.log('signIn: success, user=', result.user.email);
   } catch(e) {
-    console.error('signIn error:', e.code, e.message);
+    console.error('signIn error code:', e.code);
+    console.error('signIn error msg:', e.message);
     $('btnGoogleLogin').disabled = false;
     $('btnGoogleLogin').innerHTML = GOOGLE_BTN;
     if (e.code === 'auth/popup-blocked') {
-      alert('❌ 彈出視窗被瀏覽器封鎖。
-
-請在網址列右側點「允許彈出視窗」，然後再試一次。');
+      showToast('彈出視窗被封鎖，請在網址列右側允許後重試');
     } else if (e.code === 'auth/unauthorized-domain') {
-      alert('❌ 網域未授權：' + location.hostname + '
-
-請到 Firebase Console → Authentication → Settings → Authorized domains，加入這個網址。');
+      showToast('網域未授權：' + location.hostname);
+      console.error('請到 Firebase Authentication > Settings > Authorized domains 加入:', location.hostname);
     } else if (e.code === 'auth/api-key-not-valid') {
-      alert('❌ API Key 無效，請重新填入 Firebase 設定碼。');
+      showToast('API Key 無效，請重新設定 Firebase');
     } else if (e.code !== 'auth/popup-closed-by-user') {
-      alert('❌ 登入失敗
-錯誤代碼：' + e.code + '
-訊息：' + e.message);
+      showToast('登入失敗：' + e.code);
     }
   }
 }
