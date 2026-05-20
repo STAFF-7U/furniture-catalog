@@ -211,6 +211,9 @@ td{padding:8px 11px;vertical-align:middle}
 .fg textarea{resize:vertical;min-height:66px}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media(max-width:380px){.frow{grid-template-columns:1fr}}
+.sku-badge{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;padding:2px 8px;border-radius:6px;background:var(--accent-bg);color:var(--accent);border:1px solid #d4b896;font-family:monospace;white-space:nowrap}
+.sku-row{display:flex;align-items:center;gap:8px;margin-top:3px}
+.sku-hint{font-size:.7rem;color:var(--text3)}
 .img-prev{width:100%;aspect-ratio:1/1;background:var(--surface2);border-radius:10px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--border2);margin-bottom:10px;overflow:hidden;position:relative;cursor:default;touch-action:none}
 .img-prev.has-img{border-style:solid;border-color:var(--border)}
 .img-prev canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
@@ -434,8 +437,16 @@ service cloud.firestore {
         <div class="fg"><label>類別</label><input id="fC" list="cdl" placeholder="沙發、餐桌…"><datalist id="cdl"></datalist></div>
       </div>
       <div class="fg"><label>品項名稱 *</label><input id="fN" placeholder="例：L型布沙發"></div>
+      <div class="fg">
+        <label>系統貨號</label>
+        <div class="sku-row">
+          <span id="fSkuDisplay" class="sku-badge">— 儲存後自動產生 —</span>
+          <span class="sku-hint">新增時自動產生，可手動修改</span>
+        </div>
+        <input id="fSku" type="text" placeholder="例：SF-2025-001" style="margin-top:6px" autocomplete="off">
+      </div>
       <div class="frow">
-        <div class="fg"><label>型號</label><input id="fMo" placeholder="SF-2023A"></div>
+        <div class="fg"><label>型號</label><input id="fMo" placeholder="廠商型號 SF-2023A"></div>
         <div class="fg"><label>規格</label><input id="fSp" placeholder="250×90×80cm"></div>
       </div>
       <div class="frow">
@@ -500,6 +511,7 @@ const firebaseConfig = STORED_CFG || { apiKey:'', authDomain:'', projectId:'', a
 
 let app, auth, db, unsubItems = null;
 let items = [];
+let skuCounters = {};  // { "類別縮寫": lastNumber } persisted in Firestore
 
 // Google icon button HTML (module-scope so signIn() can reference it)
 const GOOGLE_BTN = `<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0OCA0OCI+PHBhdGggZmlsbD0iI0VBNDMzNSIgZD0iTTI0IDkuNWMzLjU0IDAgNi43MSAxLjIyIDkuMjEgMy42bDYuODUtNi44NUMzNS45IDIuMzggMzAuMjcgMCAyNCAwIDExLjkgMCAyLjA2IDYuODYuMTIgMTYuNzdsNy45NiA2LjE5QzkuNjUgMTMuMTQgMTYuMzMgOS41IDI0IDkuNXoiLz48cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNNDYuOTggMjQuNTVjMC0xLjU3LS4xNS0zLjA5LS4zOC00LjU1SDI0djguNjFoMTIuOGMtLjU4IDIuOTYtMi4yNiA1LjQ4LTQuNzggNy4xN2w3LjczIDZjNC41MS00LjE4IDcuMjMtMTAuMzYgNy4yMy0xNy4yM3oiLz48cGF0aCBmaWxsPSIjRkJCQzA1IiBkPSJNMTAuMDggMjguNjJBMTQuODYgMTQuODYgMCAwIDEgOS41IDI0Yy0uMjEtMS41Ni0uMjEtMy4wOCAwLTQuNjJsMi44Ny0yLjIzYTEzLjg2IDEzLjg2IDAgMCAxIDIxLjE3LTEuNjNsNi4zOS02LjM5QTI0IDI0IDAgMCAwIC4xMiAxNi43N2w3Ljk2IDYuMTkiLz48cGF0aCBmaWxsPSIjMzRBODUzIiBkPSJNMjQgNDhjNi40OCAwIDExLjkzLTIuMTMgMTUuODktNS43OWwtNy43My02Yy0yLjE1IDEuNDUtNC44MyAyLjI5LTguMTYgMi4yOS02Ljc4IDAtMTIuNS00LjY0LTE0LjQyLTEwLjg5TDEuNjIgMzQuMzdDNS41MyA0Mi41NiAxNC4xNiA0OCAyNCA0OHoiLz48L3N2Zz4=" alt="Google"> 使用 Google 帳號登入`;
@@ -510,6 +522,51 @@ let currentUser = null;
 // ── HELPERS ───────────────────────────────────────────
 const $ = id => document.getElementById(id);
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+// ── SKU GENERATION ────────────────────────────────────
+// Format: {CAT}-{YYYY}-{NNN}  e.g. SF-2025-001
+// CAT = first 2 chars of category, uppercased, mapped to common abbrevs
+const CAT_MAP = {
+  '沙發':'SF','床架':'BD','餐桌':'DT','書桌':'DK','收納':'ST',
+  '椅子':'CH','衣櫃':'WC','電視櫃':'TV','茶几':'CT','置物架':'SH',
+};
+function catCode(cat) {
+  if (!cat) return 'XX';
+  if (CAT_MAP[cat]) return CAT_MAP[cat];
+  // Use first 2 chars, convert to uppercase latin or pinyin-like
+  const c = (cat||'').trim().toUpperCase();
+  // Try to get 2 ASCII chars from the string
+  const ascii = c.replace(/[^A-Z0-9]/g,'');
+  if (ascii.length >= 2) return ascii.slice(0,2);
+  return (c.charCodeAt(0).toString(36) + (c.charCodeAt(1)||0).toString(36)).toUpperCase().slice(0,2);
+}
+
+function generateSku(cat) {
+  const code = catCode(cat);
+  const year = new Date().getFullYear();
+  const key  = code + '-' + year;
+  // Count existing items with same code+year to get next number
+  const existing = items.filter(i => i.sku && i.sku.startsWith(key));
+  let max = 0;
+  existing.forEach(i => {
+    const parts = (i.sku || '').split('-');
+    const n = parseInt(parts[parts.length - 1]) || 0;
+    if (n > max) max = n;
+  });
+  const next = String(max + 1).padStart(3, '0');
+  return `${code}-${year}-${next}`;
+}
+
+// Preview SKU when category changes in form
+function previewSku() {
+  const editId = $('eid').value;
+  const manualSku = $('fSku').value.trim();
+  if (manualSku) return; // user typed something, don't override
+  if (editId) return;    // editing existing item, don't change
+  const cat = $('fC').value.trim();
+  const preview = cat ? generateSku(cat) : '— 填寫類別後預覽 —';
+  $('fSkuDisplay').textContent = preview;
+}
 function mgn(c,s) { if(!c||!s||+c===0) return null; return Math.round(((+s-+c)/+s)*100); }
 function mc(m) { if(m===null) return ''; if(m>=40) return 'g'; if(m>=25) return 'a'; return 'r'; }
 function stockClass(q) {
@@ -651,7 +708,7 @@ function filtered() {
   const q=$('q').value.toLowerCase();
   const vf=$('vf').value, cf=$('cf').value, srt=$('sf').value;
   let list=items.filter(i=>{
-    const ok=!q||[i.n,i.v,i.mo,i.c,i.ma,i.no,i.sp].some(f=>(f||'').toLowerCase().includes(q));
+    const ok=!q||[i.n,i.v,i.mo,i.c,i.ma,i.no,i.sp,i.sku].some(f=>(f||'').toLowerCase().includes(q));
     let sc=true;
     if(stockFilter==='out') sc=stockClass(i.qty)==='out';
     else if(stockFilter==='low') sc=stockClass(i.qty)==='low';
@@ -721,6 +778,7 @@ function renderCards(list) {
         <div class="stock-badge ${sbCls}">${stockLabel(qty)}</div></div>
       <div class="card-body">
         <div class="card-name">${it.n}</div>
+        ${it.sku?`<div class="sku-row"><span class="sku-badge">${it.sku}</span></div>`:''}
         <div class="card-sub">${[it.mo,it.sp,it.ma].filter(Boolean).join(' · ')}</div>
         <div class="price-row">
           ${it.co?`<span class="chip chip-c">進 $${(+it.co).toLocaleString()}</span>`:''}
@@ -754,7 +812,7 @@ function renderTable(list) {
       return `<tr class="${sc==='out'?'tr-out':sc==='low'?'tr-low':''}">
         <td>${th}</td>
         <td><span class="vbadge" style="background:${color}18;color:${color}">${it.v||''}</span></td>
-        <td style="color:var(--text2)">${it.c||''}</td><td><strong>${it.n}</strong></td>
+        <td style="color:var(--text2)">${it.c||''}</td><td><strong>${it.n}</strong>${it.sku?`<br><span class="sku-badge" style="font-size:.62rem">${it.sku}</span>`:''}</td>
         <td style="color:var(--text2);font-size:.74rem">${it.mo||''}</td>
         <td style="font-size:.74rem">${it.sp||''}</td><td style="font-size:.74rem">${it.ma||''}</td>
         <td class="tc">${it.co?'$'+(+it.co).toLocaleString():'—'}</td>
@@ -791,6 +849,8 @@ async function setQty(id,val) {
 function openModal() {
   ['fV','fC','fN','fMo','fSp','fCo','fSe','fQty','fSt','fMa','fNo'].forEach(id=>$(id).value='');
   $('eid').value=''; $('imgData').value=''; $('imgUrl').value='';
+  $('fSku').value='';
+  $('fSkuDisplay').textContent='— 填寫類別後預覽 —';
   $('mhint').style.display='none';
   srcImage=null;
   updateImgPrev('');
@@ -803,6 +863,8 @@ function closeModal() { $('ov').classList.remove('open'); }
 function editItem(id) {
   const it=items.find(i=>i.id===id); if(!it) return;
   $('fV').value=it.v||''; $('fC').value=it.c||''; $('fN').value=it.n||'';
+  $('fSku').value=it.sku||'';
+  $('fSkuDisplay').textContent=it.sku||'— 無貨號 —';
   $('fMo').value=it.mo||''; $('fSp').value=it.sp||'';
   $('fCo').value=it.co||''; $('fSe').value=it.se||'';
   $('fQty').value=it.qty!=null?it.qty:'';
@@ -822,10 +884,22 @@ async function delItem(id) {
 async function saveItem() {
   const n=$('fN').value.trim(), v=$('fV').value.trim();
   if(!n||!v){alert('請填寫廠商名稱與品項名稱');return;}
-  // Crop/compress image before saving
+  const isNew = !$('eid').value;
+  const cat   = $('fC').value.trim();
+  // SKU: use manual input if provided, else auto-generate for new items
+  let sku = $('fSku').value.trim();
+  if (!sku) {
+    if (isNew) {
+      sku = generateSku(cat);
+    } else {
+      // Keep existing SKU when editing
+      const existing = items.find(i=>i.id===$('eid').value);
+      sku = existing ? (existing.sku||'') : generateSku(cat);
+    }
+  }
   const img = document.getElementById('cropImg') ? cropToCanvas() : ($('imgData').value||$('imgUrl').value.trim());
   await writeItem({
-    id:$('eid').value||uid(), v, c:$('fC').value.trim(), n,
+    id:$('eid').value||uid(), v, c:cat, n, sku,
     mo:$('fMo').value.trim(), sp:$('fSp').value.trim(),
     co:$('fCo').value, se:$('fSe').value,
     qty:parseInt($('fQty').value)||0,
@@ -1066,8 +1140,8 @@ function updateThreshPreview() {
 
 // ── EXPORT ────────────────────────────────────────────
 function exportCSV() {
-  const h=['廠商','類別','品名','型號','規格','材質','進貨價','售價','毛利率','庫存','庫存狀態','到貨週期','備註'];
-  const rows=items.map(i=>[i.v,i.c,i.n,i.mo,i.sp,i.ma,i.co,i.se,
+  const h=['系統貨號','廠商','類別','品名','型號','規格','材質','進貨價','售價','毛利率','庫存','庫存狀態','到貨週期','備註'];
+  const rows=items.map(i=>[i.sku||'',i.v,i.c,i.n,i.mo,i.sp,i.ma,i.co,i.se,
     mgn(i.co,i.se)!==null?mgn(i.co,i.se)+'%':'',i.qty||0,stockLabel(i.qty),i.st,i.no
   ].map(v=>`"${(v??'').toString().replace(/"/g,'""')}"`));
   const csv='\uFEFF'+[h,...rows].map(r=>r.join(',')).join('\n');
@@ -1142,6 +1216,12 @@ $('btnApplySettings').addEventListener('click', ()=>{
   closeSetting(); render(); showToast('設定已套用 ✓');
 });
 $('sOut').addEventListener('input', updateThreshPreview);
+$('fC').addEventListener('input', previewSku);
+$('fSku').addEventListener('input', ()=>{
+  // If user types a manual SKU, update the display badge
+  const v = $('fSku').value.trim();
+  $('fSkuDisplay').textContent = v || '— 填寫類別後預覽 —';
+});
 $('imgZoom').addEventListener('input', e=>{
   cropState.scale = +e.target.value/100;
   $('imgZoomVal').textContent = e.target.value+'%';
